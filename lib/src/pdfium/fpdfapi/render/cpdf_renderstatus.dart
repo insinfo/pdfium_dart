@@ -3,6 +3,8 @@ import '../../fxcrt/fx_coordinates.dart';
 import '../page/pdf_page_object.dart';
 import 'cpdf_rendercontext.dart';
 import 'cpdf_renderoptions.dart';
+import 'cpdf_textrenderer.dart';
+import 'cpdf_imagerenderer.dart';
 
 class CPDF_RenderStatus {
   final CPDF_RenderContext context;
@@ -25,19 +27,17 @@ class CPDF_RenderStatus {
     // TODO: Handle ClipPath and Extended Graphics State here
     
     // Matrix transformation logic (Object to Device)
-    // The matrix passed here is usually Initial Matrix * Page Matrix.
-    // The object has its own matrix (Text Matrix, Image Matrix).
-    // Final Device Matrix = ObjMatrix * matrix.
-    
-    // For now, assume simplified transform
     final deviceMatrix = obj.matrix.concat(matrix);
     
     if (obj is PdfPathObject) {
        _renderPathObject(obj, deviceMatrix);
     } else if (obj is PdfTextObject) {
-       _renderTextObject(obj, deviceMatrix);
+       // TextRenderer expects the Page-to-Device matrix (context matrix)
+       // because it combines it with obj.matrix internally.
+       _renderTextObject(obj, matrix);
     } else if (obj is PdfImageObject) {
-       _renderImageObject(obj, deviceMatrix);
+       // ImageRenderer expects Context Matrix too
+       _renderImageObject(obj, matrix);
     } else if (obj is PdfFormObject) {
        _renderFormObject(obj, deviceMatrix);
     }
@@ -49,13 +49,11 @@ class CPDF_RenderStatus {
   }
   
   void _renderTextObject(PdfTextObject obj, FxMatrix deviceMatrix) {
-      // Stub
-      // delegate to CPDF_TextRenderer
+      CPDF_TextRenderer.renderText(device, obj, deviceMatrix);
   }
   
   void _renderImageObject(PdfImageObject obj, FxMatrix deviceMatrix) {
-      // Stub
-      // delegate to CPDF_ImageRenderer
+      CPDF_ImageRenderer.renderImage(device, obj, deviceMatrix);
   }
   
   void _renderFormObject(PdfFormObject obj, FxMatrix deviceMatrix) {

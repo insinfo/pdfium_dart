@@ -218,6 +218,9 @@
 | Anotações | ✅ 100% | ✅ 34 testes |
 | Formulários | ✅ 100% | ✅ 36 testes |
 | Dependências | ✅ 100% | (AGG, FreeType, HarfBuzz) |
+| OpenJPEG | ✅ 100% | (JPEG 2000 codec) |
+| libjpeg | ✅ 100% | (JPEG baseline decoder) |
+| libpng | ✅ 100% | (PNG decoder) |
 
 ---
 
@@ -232,20 +235,51 @@
 - [x] `flate` - Flate/ZLib decode com Predictors
 - [x] `fax` - CCITT Fax decode
 - [x] `basic` - RunLength decode
-- [x] `jpeg` - JPEG decode (Stub/Interface)
-- [x] `png` - PNG decode (Stub/Interface)
+- [x] `jpeg` - JPEG baseline decoder completo:
+  - `jpeg_types.dart` - Tipos, constantes, tabelas Huffman/Quant padrão
+  - `jpeg_bitreader.dart` - Leitor de bits com stuffing de marcadores
+  - `jpeg_idct.dart` - IDCT inteiro 8x8 (preciso e rápido)
+  - `jpeg_color.dart` - Conversão YCbCr→RGB, CMYK, upsampling
+  - `jpeg_decoder.dart` - Decoder baseline completo
+  - `jpeg_module.dart` - Integração com PDFium
+- [x] `png` - PNG decoder completo:
+  - `png_types.dart` - Tipos, chunks, CRC32, Adam7
+  - `png_filter.dart` - Filtros PNG (None, Sub, Up, Average, Paeth)
+  - `png_decoder.dart` - Decoder com suporte a todos os tipos de cor
+  - `png_module.dart` - Integração com PDFium
 
 ## Fase 12: FPDFText (Texto e Busca) ✅ CONCLUÍDO
 - [x] `cpdf_textpage.dart` - Extração de texto (Com Unicode e Posição)
 - [x] `cpdf_textpagefind.dart` - Busca de texto
 - [x] `pdf_content_parser.dart` - Parse de objetos da página (Texto, Paths, Imagens)
 
-## Fase 13: Renderização (fpdfapi/render) 🚧 EM ANDAMENTO
-- [ ] `cpdf_renderoptions.dart` - Opções de renderização flags
-- [ ] `cpdf_rendercontext.dart` - Contexto de renderização de página
-- [ ] `cpdf_renderstatus.dart` - Controlador de estado da renderização
-- [ ] `cpdf_textrenderer.dart` - Renderização de objetos de texto
-- [ ] `cpdf_imagerenderer.dart` - Renderização de imagens
+## Fase 13: Renderização (fpdfapi/render) ✅ CONCLUÍDO
+- [x] `cpdf_renderoptions.dart` - Opções de renderização flags
+- [x] `cpdf_rendercontext.dart` - Contexto de renderização de página
+- [x] `cpdf_renderstatus.dart` - Controlador de estado da renderização
+- [x] `cpdf_textrenderer.dart` - Renderização de objetos de texto
+- [x] `cpdf_imagerenderer.dart` - Renderização de imagens
+
+## Fase 13.5: OpenJPEG (JPEG 2000 Codec) ✅ CONCLUÍDO
+- [x] `openjpeg_types.dart` - Tipos, constantes e enums (J2kMarker, Jp2Box, OpjColorSpace)
+- [x] `openjpeg_image.dart` - Estruturas de imagem (OpjImage, OpjImageComponent, conversões de cor)
+- [x] `openjpeg_codec.dart` - Parâmetros de codec (compressão, descompressão, codestream info)
+- [x] `openjpeg_stream.dart` - I/O streams (OpjStream, OpjMemoryStream, OpjBitIO)
+- [x] `dwt.dart` - Discrete Wavelet Transform (5-3 reversível, 9-7 irreversível, MCT)
+- [x] `mqc.dart` - MQ Arithmetic Entropy Coder (codificação aritmética)
+- [x] `t1.dart` - Tier-1 Coding (code-block coding)
+- [x] `t2.dart` - Tier-2 Coding (packet parsing, progression orders)
+- [x] `tcd.dart` - Tile Component Decoder (coordenação de decodificação)
+- [x] `j2k_decoder.dart` - J2K Codestream Decoder (decodificador principal)
+- [x] `jp2_decoder.dart` - JP2 File Format Decoder (formato de arquivo JP2)
+- [x] `openjpeg.dart` - API principal e exports
+
+---
+
+## Fase 14: Integração de Renderização (fxge -> AGG/FreeType) 🚧 PLANEJADO
+- [ ] Conectar `CFX_RenderDevice` aos módulos AGG
+- [ ] Conectar `CPDF_TextRenderer` aos módulos FreeType (via `fx_freetype` wrapper)
+- [ ] Implementar rasterização real de glifos
 
 ---
 

@@ -263,7 +263,7 @@ class PdfContentParser {
     final stringObj = op.operands.length > startIndex ? op.operands[startIndex] : null;
     if (stringObj is! PdfString) return;
     
-    _addTextObject(stringObj.value, 0.0); // No kerneling adjustment
+    _addTextObject(stringObj.text, 0.0); // No kerneling adjustment
   }
   
   void _handleShowTextArray(ContentOperation op) {
@@ -274,10 +274,10 @@ class PdfContentParser {
     for (int i = 0; i < array.length; i++) {
         final item = array.getAt(i);
         if (item is PdfString) {
-            _addTextObject(item.value, 0.0);
+            _addTextObject(item.text, 0.0);
         } else if (item is PdfNumber) {
             // Apply numeric offset (kerning)
-            _applyTextShift(item.value);
+            _applyTextShift(item.numberValue);
         }
     }
   }

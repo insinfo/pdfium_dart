@@ -1,17 +1,17 @@
 import '../fxcrt/fx_coordinates.dart';
+import '../fpdfapi/font/pdf_font.dart';
 import 'fx_dib.dart';
 
 class CFX_RenderDevice {
-  CFX_DIBitmap? _bitmap;
+  FxDIBitmap? _bitmap;
   int _width = 0;
   int _height = 0;
-  bool _clipResult = true; // Simplified clip state
 
   int get width => _width;
   int get height => _height;
-  CFX_DIBitmap? get bitmap => _bitmap;
+  FxDIBitmap? get bitmap => _bitmap;
 
-  void setBitmap(CFX_DIBitmap bitmap) {
+  void setBitmap(FxDIBitmap bitmap) {
     _bitmap = bitmap;
     _width = bitmap.width;
     _height = bitmap.height;
@@ -21,20 +21,32 @@ class CFX_RenderDevice {
   // Basic drawing operations (Device Coordinates)
   void fillRect(FxRect rect, int color) {
     if (_bitmap == null) return;
-    // Coordinate conversion or direct?
-    // Usually Rect is int or fixed point for device.
-    // FxRect is generally int? No, FxRect is likely generic or double based on previous files.
-    // fx_dib methods operate on int coordinates usually.
     
-    // Simplification:
-    _bitmap!.compositeRect(
-      rect.left.round(), 
-      rect.top.round(), 
-      rect.width.round(), 
-      rect.height.round(), 
-      color
+    // Convert FxRect (double) to FxRectInt
+    final rectInt = FxRectInt(
+        rect.left.round(), 
+        rect.top.round(), 
+        rect.right.round(), 
+        rect.bottom.round()
     );
+    
+    final colorObj = FxColor(color);
+    _bitmap!.fillRect(rectInt, colorObj);
   }
-  
-  // TODO: Add Path drawing, Text drawing interfaces
+
+  void drawChar(PdfFont font, int charCode, FxMatrix matrix, int color) {
+    if (_bitmap == null) return;
+    
+    // Calculate approximate bounds of the glyph in device space
+    final origin = matrix.transformPoint(const FxPoint(0, 0));
+    
+    // Let's just draw a small box at origin
+    final x = origin.x.round();
+    final y = origin.y.round();
+    
+    // Draw 2x2 dot
+    final dotRect = FxRectInt(x, y - 2, x + 2, y);
+    
+    _bitmap!.fillRect(dotRect, FxColor(color));
+  }
 }
