@@ -5,3 +5,7 @@ export 'data_and_bytes_consumed.dart';
 export 'flate/flate_module.dart';
 export 'flate/predictors.dart';
 export 'flate/clzw_decoder.dart';
+export 'fax/fax_module.dart';
+export 'basic/basic_module.dart';
+export 'jpeg/jpeg_module.dart';
+export 'png/png_module.dart';

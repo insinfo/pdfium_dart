@@ -53,6 +53,45 @@ class FaxModule {
       actualHeight,
     );
   }
+
+  // Helper for FaxG4Decode
+  static int faxG4Decode(
+    Uint8List srcBuf, // Bit buffer
+    int startingBitPos,
+    int width,
+    int height,
+    int pitch,
+    Uint8List destBuf,
+  ) {
+    if (width <= 0 || height <= 0) {
+      return -1;
+    }
+
+    if (destBuf.length < height * pitch) {
+      return -1;
+    }
+
+    int columns = width;
+    Uint8List refBuf = Uint8List(pitch);
+    refBuf.fillRange(0, refBuf.length, 0xff);
+    
+    _Cursor cursor = _Cursor(startingBitPos);
+    
+    for (int i = 0; i < height; ++i) {
+        int lineStart = i * pitch;
+        int lineEnd = lineStart + pitch;
+        if (lineEnd > destBuf.length) break;
+        
+        Uint8List lineBuf = Uint8List.sublistView(destBuf, lineStart, lineEnd);
+        lineBuf.fillRange(0, lineBuf.length, 0xff);
+        
+        _faxG4GetRow(srcBuf, cursor, lineBuf, refBuf, columns);
+        
+        refBuf.setAll(0, lineBuf);
+    }
+    
+    return cursor.pos;
+  }
 }
 
 // ============================================================================

@@ -2,6 +2,7 @@
 /// 
 /// Port of core/fpdfapi/page/cpdf_pageobject.h
 
+import '../font/pdf_font.dart';
 import '../../fxcrt/fx_coordinates.dart';
 import '../../fxcrt/fx_types.dart';
 import '../parser/pdf_dictionary.dart';
@@ -44,6 +45,9 @@ class PdfTextObject extends PdfPageObject {
   
   /// Font name
   String fontName = '';
+
+  /// Font reference
+  PdfFont? font;
   
   /// Font size
   double fontSize = 12.0;

@@ -34,10 +34,64 @@ class PdfTextPage {
   }
 
   void _parseTextPage() {
-    // TODO: Implement parsing of page text objects
-    // This requires iterating over page.objects (if available) or parsing content stream
-    // and building CharInfo list.
-    // For now, we leave this empty or stubbed.
+    _charList.clear();
+    final buffer = StringBuffer();
+    
+    for (final obj in page.objects) {
+      if (obj is PdfTextObject) {
+         final text = obj.text;
+         final matrix = obj.matrix;
+         final fontSize = obj.fontSize;
+         final font = obj.font;
+         
+         for (int i = 0; i < text.length; i++) {
+            final charCode = text.codeUnitAt(i);
+            
+            // Unicode mapping
+            int unicode = charCode;
+            if (font != null) {
+                final u = font.getUnicode(charCode);
+                if (u != null) unicode = u;
+            }
+            
+            FxPoint origin = obj.position; 
+            if (obj.charPositions.length > i) {
+               origin = obj.charPositions[i];
+            }
+            
+            double charWidth = 0;
+            if (font != null) {
+                charWidth = font.getCharWidth(charCode) / 1000.0 * fontSize;
+            } else {
+                charWidth = fontSize * 0.5; // Fallback
+            }
+            
+            // Box approximate (Horizontal LTR)
+            // PDF Y is up
+            final charBox = FxRect(
+                origin.x, 
+                origin.y, // Bottom (Baseline)
+                origin.x + charWidth, 
+                origin.y + fontSize // Top
+            );
+            
+            _charList.add(CharInfo(
+                charType: CharType.normal,
+                charCode: charCode,
+                unicode: unicode,
+                origin: FxPointF(origin.x, origin.y),
+                charBox: charBox,
+                matrix: matrix,
+                textObject: obj
+            ));
+            
+            if (unicode != 0) {
+              buffer.writeCharCode(unicode);
+            }
+         }
+      }
+    }
+    _textBuf = buffer.toString();
   }
 
   int countChars() => _charList.length;
@@ -66,8 +120,15 @@ class PdfTextPage {
   
   List<FxRect> getRectArray(int start, int count) {
     List<FxRect> rects = [];
-    // Combine adjacent char boxes
-    return rects;
+    if (start < 0 || count <= 0) return rects;
+    if (start + count > _charList.length) count = _charList.length - start;
+
+    for (int i = 0; i < count; i++) {
+        int index = start + i;
+        if (index >= _charList.length) break;
+        rects.add(_charList[index].charBox);
+    }
+    return rects; 
   }
   
   // Search support

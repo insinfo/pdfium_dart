@@ -226,17 +226,26 @@
 - [x] FreeType - Engine de Fontes
 - [x] HarfBuzz - Text Shaping
 
-## Fase 11: FXCodec (Codecs de Imagem) 🚧 EM ANDAMENTO
+## Fase 11: FXCodec (Codecs de Imagem) ✅ CONCLUÍDO
 - [x] `fx_codec_def.dart` - Definições básicas
 - [x] `scanlinedecoder.dart` - Interface de decodificador por linha
 - [x] `flate` - Flate/ZLib decode com Predictors
-- [ ] `fax` - CCITT Fax decode
-- [ ] `jpeg` - JPEG decode
-- [ ] `png` - PNG decode
+- [x] `fax` - CCITT Fax decode
+- [x] `basic` - RunLength decode
+- [x] `jpeg` - JPEG decode (Stub/Interface)
+- [x] `png` - PNG decode (Stub/Interface)
 
-## Fase 12: FPDFText (Texto e Busca) 🚧 EM ANDAMENTO
-- [x] `cpdf_textpage.dart` - Extração de texto estruturado (Estrutura Básica)
-- [x] `cpdf_textpagefind.dart` - Busca de texto (Estrutura Básica)
+## Fase 12: FPDFText (Texto e Busca) ✅ CONCLUÍDO
+- [x] `cpdf_textpage.dart` - Extração de texto (Com Unicode e Posição)
+- [x] `cpdf_textpagefind.dart` - Busca de texto
+- [x] `pdf_content_parser.dart` - Parse de objetos da página (Texto, Paths, Imagens)
+
+## Fase 13: Renderização (fpdfapi/render) 🚧 EM ANDAMENTO
+- [ ] `cpdf_renderoptions.dart` - Opções de renderização flags
+- [ ] `cpdf_rendercontext.dart` - Contexto de renderização de página
+- [ ] `cpdf_renderstatus.dart` - Controlador de estado da renderização
+- [ ] `cpdf_textrenderer.dart` - Renderização de objetos de texto
+- [ ] `cpdf_imagerenderer.dart` - Renderização de imagens
 
 ---
 

@@ -10,6 +10,7 @@ import '../parser/pdf_document.dart';
 import '../parser/pdf_object.dart';
 import '../parser/pdf_stream.dart';
 import 'pdf_page_object.dart';
+import 'pdf_content_parser.dart';
 
 /// PDF Page
 /// 
@@ -38,6 +39,15 @@ class PdfPage {
   
   /// Get the document
   PdfDocument get document => _document;
+
+  /// Get parsed page objects
+  List<PdfPageObject> get objects {
+    if (_objects == null) {
+      final parser = PdfContentParser(this);
+      _objects = parser.parse();
+    }
+    return _objects!;
+  }
   
   /// Get MediaBox (required)
   FxRect get mediaBox {
