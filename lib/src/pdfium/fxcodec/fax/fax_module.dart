@@ -9,8 +9,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import '../scanlinedecoder.dart';
-import '../../fxcrt/fx_types.dart';
-import '../../fxge/fx_dib.dart';
+import '../../fxcrt/fx_types.dart'; 
 import 'fax_tables.dart';
 
 // ============================================================================
@@ -53,28 +52,6 @@ class FaxModule {
       actualWidth,
       actualHeight,
     );
-  }
-
-  // Helper for FaxG4Decode
-  static int faxG4Decode(
-    Uint8List srcBuf,
-    int startingBitPos,
-    int width,
-    int height,
-    int pitch,
-    Uint8List destBuf,
-  ) {
-    if (width <= 0 || height <= 0) {
-      return -1;
-    }
-    
-    // Create a temporary decoder to run G4 decode logic on a buffer
-    // This is bit trickier since the C++ implementation separates logic from class
-    // We'll reuse the internal logic functions.
-    // However, looking at the C++ code, FaxG4Decode is checking boundaries and calling
-    // FaxG4GetRow repeatedly.
-    // For now we only implement the Decoder creation. 
-    return -1; // To be implemented if needed
   }
 }
 
@@ -122,13 +99,13 @@ class _FaxDecoder extends ScanlineDecoder {
 
   @override
   bool rewind() {
-    refBuf.fillRange(0, refBuf.length, 0xff);
+    refBuf.fillRange(0, refBuf.length, 0x00);
     bitpos = 0;
     return true;
   }
 
   @override
-  Uint8List? getScanline(int line) {
+  Uint8List? getNextLine() {
     final bitSize = srcSpan.length * 8;
     
     // Helper object to pass bitpos by reference
@@ -162,12 +139,8 @@ class _FaxDecoder extends ScanlineDecoder {
 
     if (byteAlign && cursor.pos < bitSize) {
       int bitpos0 = cursor.pos;
-      int bitpos1 = (cursor.pos + 7) & ~7; // FxAlignToBoundary<8>
+      int bitpos1 = (cursor.pos + 7) & ~7; 
       
-      // Check if we can align (all zeros between)
-      // Original logic:
-      // while (byte_align_ && bitpos0 < bitpos1) { ... }
-      // It sets byte_align_ = false if it finds non-zero.
       bool canAlign = true;
       while (canAlign && bitpos0 < bitpos1) {
         int bit = srcSpan[bitpos0 ~/ 8] & (1 << (7 - bitpos0 % 8));
@@ -188,7 +161,6 @@ class _FaxDecoder extends ScanlineDecoder {
       _invertBuffer(scanlineBuf);
     }
 
-    // Save for ScanlineDecoder API (although we return it directly)
     return scanlineBuf;
   }
 
@@ -226,20 +198,21 @@ int _findBit(Uint8List dataBuf, int maxPos, int startPos, bool bit) {
 
   final int bitXor = bit ? 0x00 : 0xff;
   int bitOffset = startPos % 8;
-  
+  int bytePos = startPos ~/ 8;
+
   if (bitOffset != 0) {
-    int bytePos = startPos ~/ 8;
+    if (bytePos >= dataBuf.length) return maxPos;
     int data = (dataBuf[bytePos] ^ bitXor) & (0xff >> bitOffset);
     if (data != 0) {
       return bytePos * 8 + kOneLeadPos[data];
     }
-    startPos += (8 - bitOffset); // Advance to next byte
+    startPos += (8 - bitOffset);
+    bytePos++;
   }
 
-  int bytePos = startPos ~/ 8;
   int maxByte = (maxPos + 7) ~/ 8;
+  maxByte = math.min(maxByte, dataBuf.length);
 
-  // Bulk read optimizations could go here, but simple loop for now
   while (bytePos < maxByte) {
     int data = dataBuf[bytePos] ^ bitXor;
     if (data != 0) {
@@ -251,10 +224,17 @@ int _findBit(Uint8List dataBuf, int maxPos, int startPos, bool bit) {
 }
 
 void _faxG4FindB1B2(Uint8List refBuf, int columns, int a0, bool a0color, List<int> b1b2) {
-  // b1b2 is [b1, b2]
-  bool firstBit = a0 < 0 || (refBuf[a0 ~/ 8] & (1 << (7 - a0 % 8))) != 0;
-  
+  bool firstBit = true; 
+  if (a0 >= 0) {
+    if (a0 ~/ 8 < refBuf.length) {
+       firstBit = (refBuf[a0 ~/ 8] & (1 << (7 - a0 % 8))) != 0;
+    } else {
+       firstBit = false; 
+    }
+  }
+
   int b1 = _findBit(refBuf, columns, a0 + 1, !firstBit);
+  
   if (b1 >= columns) {
     b1b2[0] = columns;
     b1b2[1] = columns;
@@ -262,8 +242,8 @@ void _faxG4FindB1B2(Uint8List refBuf, int columns, int a0, bool a0color, List<in
   }
   
   if (firstBit == !a0color) {
-    b1 = _findBit(refBuf, columns, b1 + 1, firstBit);
-    firstBit = !firstBit;
+     b1 = _findBit(refBuf, columns, b1 + 1, firstBit);
+     firstBit = !firstBit;
   }
   
   if (b1 >= columns) {
@@ -273,8 +253,9 @@ void _faxG4FindB1B2(Uint8List refBuf, int columns, int a0, bool a0color, List<in
   }
   
   b1b2[0] = b1;
-  b1b2[1] = _findBit(refBuf, columns, b1 + 1, firstBit);
+  b1b2[1] = _findBit(refBuf, columns, b1 + 1, !firstBit); 
 }
+
 
 void _faxFillBits(Uint8List destBuf, int columns, int startPos, int endPos) {
   startPos = math.max(startPos, 0);
@@ -312,10 +293,12 @@ int _faxGetRun(List<int> insArray, Uint8List srcBuf, _Cursor cursor) {
   int insOff = 0;
   
   while (true) {
-    int ins = insArray[insOff++];
-    if (ins == 0xff) {
-      return -1;
+    int ins = insArray[insOff];
+    if (ins == 0xff) { 
+       return -1;
     }
+    
+    insOff++; 
     
     if (cursor.pos >= bitSize) {
       return -1;
@@ -328,6 +311,8 @@ int _faxGetRun(List<int> insArray, Uint8List srcBuf, _Cursor cursor) {
     cursor.pos++;
     
     int nextOff = insOff + ins * 3;
+    if (nextOff > insArray.length) return -1; 
+    
     for (; insOff < nextOff; insOff += 3) {
       if (insArray[insOff] == code) {
         return insArray[insOff + 1] + insArray[insOff + 2] * 256;
@@ -365,7 +350,6 @@ void _faxGet1DLine(Uint8List srcBuf, _Cursor cursor, Uint8List destBuf, int colu
     while (true) {
       int run = _faxGetRun(color ? kFaxWhiteRunIns : kFaxBlackRunIns, srcBuf, cursor);
       if (run < 0) {
-        // Error or EOL?
         while (cursor.pos < bitSize) {
           if (_nextBit(srcBuf, cursor)) {
             return;
@@ -409,29 +393,30 @@ void _faxG4GetRow(Uint8List srcBuf, _Cursor cursor, Uint8List destBuf, Uint8List
     int b2 = b1b2[1];
     
     int vDelta = 0;
-    if (!_nextBit(srcBuf, cursor)) {
+    if (!_nextBit(srcBuf, cursor)) { // 0
       if (cursor.pos >= bitSize) return;
       
       bool bit1 = _nextBit(srcBuf, cursor);
       if (cursor.pos >= bitSize) return;
       bool bit2 = _nextBit(srcBuf, cursor);
       
-      if (bit1) {
-        // VR(1), VL(1)
+      if (bit1) { // 01
+        // VR(1) or VL(1)
         vDelta = bit2 ? 1 : -1;
-      } else if (bit2) {
-        // Horizontal Mode (001)
+      } else if (bit2) { // 001
+        // Horizontal Mode
         int runLen1 = 0;
         while (true) {
           int run = _faxGetRun(
               a0color ? kFaxWhiteRunIns : kFaxBlackRunIns,
               srcBuf, cursor);
+          if (run < 0) return; // Error
           runLen1 += run;
           if (run < 64) break;
         }
-        if (a0 < 0) runLen1++; // ? from original cpp
-        if (runLen1 < 0) return;
         
+        if (a0 < 0) runLen1++; 
+
         int a1 = a0 + runLen1;
         if (!a0color) {
           _faxFillBits(destBuf, columns, a0, a1);
@@ -442,34 +427,70 @@ void _faxG4GetRow(Uint8List srcBuf, _Cursor cursor, Uint8List destBuf, Uint8List
            int run = _faxGetRun(
               a0color ? kFaxBlackRunIns : kFaxWhiteRunIns,
               srcBuf, cursor);
+           if (run < 0) return;
            runLen2 += run;
            if (run < 64) break;
         }
-        if (runLen2 < 0) return;
         
         int a2 = a1 + runLen2;
         if (a0color) {
           _faxFillBits(destBuf, columns, a1, a2);
         }
         a0 = a2;
-        continue;
-      } else {
-        // 000 -> Pass Mode or Extension
-         // ... need to implement Pass Mode logic
+        if (a0 < columns) continue;
+        return;
+      } else { // 000
+        if (cursor.pos >= bitSize) return;
+        
+        if (_nextBit(srcBuf, cursor)) { // 0001
+          // Pass Mode
+          if (!a0color) {
+            _faxFillBits(destBuf, columns, a0, b2);
+          }
+          if (b2 >= columns) return;
+          a0 = b2;
+          continue;
+        }
+        
+        // 0000
+        if (cursor.pos >= bitSize) return;
+        
+        bool nextBit1 = _nextBit(srcBuf, cursor);
+        if (cursor.pos >= bitSize) return;
+        bool nextBit2 = _nextBit(srcBuf, cursor);
+        
+        if (nextBit1) { // 00001
+           // VR(2) or VL(2)
+           vDelta = nextBit2 ? 2 : -2;
+        } else if (nextBit2) { // 000001
+           if (cursor.pos >= bitSize) return;
+           // VR(3) or VL(3)
+           vDelta = _nextBit(srcBuf, cursor) ? 3 : -3;
+        } else { // 000000
+           if (cursor.pos >= bitSize) return;
+           // Extension
+           if (_nextBit(srcBuf, cursor)) {
+             // 0000001
+             cursor.pos += 3;
+             continue; // Uncompressed?
+           }
+           cursor.pos += 5; // EOF?
+           return;
+        }
       }
     } else {
-       // Vertical 0 (1)
-       vDelta = 0;
+      // 1 -> Vertical 0
+      vDelta = 0;
     }
     
-    // Vertical Mode Logic (common for 1, 001x, etc? No wait)
-    // 1 -> V(0)
-    // 011 -> VR(1)
-    // 010 -> VL(1)
-    // 001 -> H
-    // 0001 ... extensions
+    int a1 = b1 + vDelta;
+    if (!a0color) {
+      _faxFillBits(destBuf, columns, a0, a1);
+    }
+    if (a1 >= columns) return;
+    if (a0 >= a1) return; // Monotonic increase required
     
-    // Wait, I messed up the if/else logic above.
-    // Re-check CPP
+    a0 = a1;
+    a0color = !a0color;
   }
 }
