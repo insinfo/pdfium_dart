@@ -262,6 +262,37 @@ class FxRectInt {
   
   FxSizeInt get size => FxSizeInt(width, height);
   
+  /// Intersect with another rectangle.
+  FxRectInt intersect(FxRectInt other) {
+    return FxRectInt(
+      math.max(left, other.left),
+      math.max(top, other.top),
+      math.min(right, other.right),
+      math.min(bottom, other.bottom),
+    );
+  }
+  
+  /// Check if this rectangle intersects with another.
+  bool intersects(FxRectInt other) {
+    return left < other.right && right > other.left &&
+           top < other.bottom && bottom > other.top;
+  }
+  
+  /// Union with another rectangle.
+  FxRectInt union(FxRectInt other) {
+    return FxRectInt(
+      math.min(left, other.left),
+      math.min(top, other.top),
+      math.max(right, other.right),
+      math.max(bottom, other.bottom),
+    );
+  }
+  
+  /// Check if point is inside this rectangle.
+  bool contains(int x, int y) {
+    return x >= left && x < right && y >= top && y < bottom;
+  }
+  
   FxRect toFloat() {
     return FxRect(
       left.toDouble(),
@@ -379,6 +410,12 @@ class FxMatrix {
     math.sqrt(a * a + c * c),
     math.sqrt(b * b + d * d),
   );
+  
+  /// Get X scale unit (magnitude of transformed unit X vector).
+  double getXUnit() => math.sqrt(a * a + b * b);
+  
+  /// Get Y scale unit (magnitude of transformed unit Y vector).
+  double getYUnit() => math.sqrt(c * c + d * d);
   
   /// Rotation angle in radians (approximate)
   double get rotation => math.atan2(b, a);

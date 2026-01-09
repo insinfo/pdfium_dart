@@ -258,6 +258,69 @@ class FxDIBitmap {
     }
   }
   
+  /// Get grayscale value at position (for gray bitmaps or converted)
+  int getPixelGray(int x, int y) {
+    if (x < 0 || x >= _width || y < 0 || y >= _height) {
+      return 0;
+    }
+    
+    final offset = y * _pitch + x * bytesPerPixel;
+    
+    switch (_format) {
+      case BitmapFormat.gray:
+        return _buffer[offset];
+        
+      case BitmapFormat.bgr:
+        // Convert BGR to grayscale
+        return (((_buffer[offset + 2] * 299) + 
+                 (_buffer[offset + 1] * 587) + 
+                 (_buffer[offset] * 114)) ~/ 1000);
+        
+      case BitmapFormat.bgrx:
+      case BitmapFormat.bgra:
+        // Convert BGRA to grayscale
+        return (((_buffer[offset + 2] * 299) + 
+                 (_buffer[offset + 1] * 587) + 
+                 (_buffer[offset] * 114)) ~/ 1000);
+        
+      default:
+        return 0;
+    }
+  }
+  
+  /// Set grayscale value at position (for gray bitmaps)
+  void setPixelGray(int x, int y, int gray) {
+    if (x < 0 || x >= _width || y < 0 || y >= _height) {
+      return;
+    }
+    
+    final offset = y * _pitch + x * bytesPerPixel;
+    final g = gray.clamp(0, 255);
+    
+    switch (_format) {
+      case BitmapFormat.gray:
+        _buffer[offset] = g;
+        break;
+        
+      case BitmapFormat.bgr:
+        _buffer[offset] = g;
+        _buffer[offset + 1] = g;
+        _buffer[offset + 2] = g;
+        break;
+        
+      case BitmapFormat.bgrx:
+      case BitmapFormat.bgra:
+        _buffer[offset] = g;
+        _buffer[offset + 1] = g;
+        _buffer[offset + 2] = g;
+        _buffer[offset + 3] = 255;
+        break;
+        
+      default:
+        break;
+    }
+  }
+  
   /// Draw a filled rectangle
   void fillRect(FxRectInt rect, FxColor color) {
     final left = rect.left.clamp(0, _width);
