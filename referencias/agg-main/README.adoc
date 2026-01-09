@@ -1,0 +1,44 @@
+:name: agg
+
+= {name}
+
+|====
+| link:https://github.com/cppfw/{name}/releases[image:https://img.shields.io/github/tag/cppfw/{name}.svg[releases]] | link:https://github.com/cppfw/{name}/actions[image:https://github.com/cppfw/{name}/workflows/ci/badge.svg[ci status]]
+|====
+
+anti-grain geometry
+
+This is a fork of http://sourceforge.net/projects/agg
+
+Forked from SVN revision `r134`.
+
+The directory `src/agg` contains the forked project files.
+
+== Istallation
+:package_name: agg
+
+. Setup your OS-preferred package system repo following link:https://github.com/cppfw/wiki/blob/main/enable_repo/enable_repo.adoc[this manual]
+. Install package
++
+- **vcpkg** (multi-OS): **{package_name}**
+- **conan** (multi-OS): **{package_name}**
+- **deb** (Linux): **libantigrain-dev**
+- **homebrew** (MacOS X): **libantigrain**
+- **android**: **io.github.cppfw:{package_name}**
+- **msys2** (Windows): **mingw-w64-i686-{package_name}**, **mingw-w64-x86_64-{package_name}**
+
+== License notice from the original project
+
+```
+The Anti-Grain Geometry Project
+A high quality rendering engine for C++
+http://antigrain.com
+
+Anti-Grain Geometry - Version 2.4
+Copyright (C) 2002-2005 Maxim Shemanarev (McSeem)
+
+Permission to copy, use, modify, sell and distribute this software
+is granted provided this copyright notice appears in all copies.
+This software is provided "as is" without express or implied
+warranty, and with no claim as to its suitability for any purpose.
+```
