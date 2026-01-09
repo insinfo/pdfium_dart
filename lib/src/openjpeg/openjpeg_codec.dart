@@ -230,13 +230,19 @@ class OpjDecompressionParams {
   /// Flags
   int flags;
 
-  OpjDecompressionParams()
-      : reduceLevel = 0,
+  OpjDecompressionParams({
+    int? cpReduce,
+    int? daX0,
+    int? daY0,
+    int? daX1,
+    int? daY1,
+  })
+      : reduceLevel = cpReduce ?? 0,
         maxLayers = 0,
-        decodingAreaX0 = 0,
-        decodingAreaX1 = 0,
-        decodingAreaY0 = 0,
-        decodingAreaY1 = 0,
+        decodingAreaX0 = daX0 ?? 0,
+        decodingAreaX1 = daX1 ?? 0,
+        decodingAreaY0 = daY0 ?? 0,
+        decodingAreaY1 = daY1 ?? 0,
         tileIndex = 0,
         numTilesToDecode = 0,
         flags = 0;

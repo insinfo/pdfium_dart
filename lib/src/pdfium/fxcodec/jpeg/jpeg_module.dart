@@ -66,12 +66,10 @@ class JpegModule {
 /// Scanline decoder wrapper for JPEG images
 class JpegScanlineDecoder extends ScanlineDecoder {
   final JpegImage _image;
-  final int _requestedWidth;
-  final int _requestedHeight;
-  final int _requestedComps;
   
   Uint8List? _rgbData;
   int _currentLine = 0;
+  int _srcOffset = 0;
 
   JpegScanlineDecoder({
     required JpegImage image,
@@ -79,29 +77,21 @@ class JpegScanlineDecoder extends ScanlineDecoder {
     required int requestedHeight,
     required int requestedComps,
   })  : _image = image,
-        _requestedWidth = requestedWidth,
-        _requestedHeight = requestedHeight,
-        _requestedComps = requestedComps;
+        super(
+          origWidth: image.width,
+          origHeight: image.height,
+          outputWidth: image.width,
+          outputHeight: image.height,
+          comps: requestedComps > 0 && requestedComps <= 4 ? requestedComps : image.numComponents,
+          bpc: 8,
+          pitch: image.width * (requestedComps > 0 && requestedComps <= 4 ? requestedComps : image.numComponents),
+        );
 
   @override
-  int get width => _image.width;
+  int getSrcOffset() => _srcOffset;
 
   @override
-  int get height => _image.height;
-
-  @override
-  int get components {
-    if (_requestedComps > 0 && _requestedComps <= 4) {
-      return _requestedComps;
-    }
-    return _image.numComponents;
-  }
-
-  @override
-  int get bitsPerComponent => 8;
-
-  @override
-  Uint8List? getNextScanline() {
+  Uint8List? getNextLine() {
     if (_currentLine >= _image.height) {
       return null;
     }
@@ -110,14 +100,14 @@ class JpegScanlineDecoder extends ScanlineDecoder {
     _rgbData ??= _image.toRgb();
 
     final lineWidth = _image.width;
-    final comps = components;
-    final lineData = Uint8List(lineWidth * comps);
+    final numComps = comps;
+    final lineData = Uint8List(lineWidth * numComps);
 
-    if (comps == 3) {
+    if (numComps == 3) {
       // RGB output
       final srcOffset = _currentLine * lineWidth * 3;
       lineData.setRange(0, lineWidth * 3, _rgbData!, srcOffset);
-    } else if (comps == 1) {
+    } else if (numComps == 1) {
       // Grayscale output
       if (_image.numComponents == 1) {
         final srcOffset = _currentLine * lineWidth;
@@ -132,7 +122,7 @@ class JpegScanlineDecoder extends ScanlineDecoder {
           lineData[x] = ((r * 77 + g * 151 + b * 28) >> 8);
         }
       }
-    } else if (comps == 4) {
+    } else if (numComps == 4) {
       // RGBA output
       final srcOffset = _currentLine * lineWidth * 3;
       for (int x = 0; x < lineWidth; x++) {
@@ -144,28 +134,23 @@ class JpegScanlineDecoder extends ScanlineDecoder {
     }
 
     _currentLine++;
+    _srcOffset = _currentLine * lineWidth * numComps;
     return lineData;
   }
 
   @override
-  void rewind() {
+  bool rewind() {
     _currentLine = 0;
-  }
-
-  @override
-  bool skipToScanline(int line) {
-    if (line < 0 || line >= _image.height) {
-      return false;
-    }
-    _currentLine = line;
+    _srcOffset = 0;
     return true;
   }
 
   @override
   Uint8List? getScanline(int line) {
-    if (!skipToScanline(line)) {
+    if (line < 0 || line >= _image.height) {
       return null;
     }
-    return getNextScanline();
+    _currentLine = line;
+    return getNextLine();
   }
 }

@@ -221,6 +221,7 @@
 | OpenJPEG | ✅ 100% | (JPEG 2000 codec) |
 | libjpeg | ✅ 100% | (JPEG baseline decoder) |
 | libpng | ✅ 100% | (PNG decoder) |
+| libjxl | ✅ 100% | (JPEG XL decoder) |
 
 ---
 
@@ -247,6 +248,11 @@
   - `png_filter.dart` - Filtros PNG (None, Sub, Up, Average, Paeth)
   - `png_decoder.dart` - Decoder com suporte a todos os tipos de cor
   - `png_module.dart` - Integração com PDFium
+- [x] `jxl` - JPEG XL decoder completo:
+  - `jxl_types.dart` - Tipos, enums, headers, detecção de formato
+  - `jxl_bitreader.dart` - Leitor de bits 64-bit com ANS/Huffman
+  - `jxl_decoder.dart` - Decoder para codestream e container
+  - `jxl_module.dart` - Integração com PDFium
 
 ## Fase 12: FPDFText (Texto e Busca) ✅ CONCLUÍDO
 - [x] `cpdf_textpage.dart` - Extração de texto (Com Unicode e Posição)

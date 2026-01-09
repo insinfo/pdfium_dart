@@ -64,12 +64,10 @@ class PngModule {
 /// Scanline decoder wrapper for PNG images
 class PngScanlineDecoder extends ScanlineDecoder {
   final PngImage _image;
-  final int _requestedWidth;
-  final int _requestedHeight;
-  final int _requestedComps;
   
   Uint8List? _rgbData;
   int _currentLine = 0;
+  int _srcOffset = 0;
 
   PngScanlineDecoder({
     required PngImage image,
@@ -77,50 +75,42 @@ class PngScanlineDecoder extends ScanlineDecoder {
     required int requestedHeight,
     required int requestedComps,
   })  : _image = image,
-        _requestedWidth = requestedWidth,
-        _requestedHeight = requestedHeight,
-        _requestedComps = requestedComps;
+        super(
+          origWidth: image.width,
+          origHeight: image.height,
+          outputWidth: image.width,
+          outputHeight: image.height,
+          comps: requestedComps > 0 && requestedComps <= 4 ? requestedComps : (image.hasAlpha ? 4 : 3),
+          bpc: 8,
+          pitch: image.width * (requestedComps > 0 && requestedComps <= 4 ? requestedComps : (image.hasAlpha ? 4 : 3)),
+        );
 
   @override
-  int get width => _image.width;
+  int getSrcOffset() => _srcOffset;
 
   @override
-  int get height => _image.height;
-
-  @override
-  int get components {
-    if (_requestedComps > 0 && _requestedComps <= 4) {
-      return _requestedComps;
-    }
-    return _image.hasAlpha ? 4 : 3;
-  }
-
-  @override
-  int get bitsPerComponent => 8;
-
-  @override
-  Uint8List? getNextScanline() {
+  Uint8List? getNextLine() {
     if (_currentLine >= _image.height) {
       return null;
     }
 
-    final comps = components;
+    final numComps = comps;
 
     // Generate data on demand
-    if (comps == 4) {
+    if (numComps == 4) {
       _rgbData ??= _image.toRgba();
     } else {
       _rgbData ??= _image.toRgb();
     }
 
     final lineWidth = _image.width;
-    final srcComps = comps == 4 ? 4 : 3;
-    final lineData = Uint8List(lineWidth * comps);
+    final srcComps = numComps == 4 ? 4 : 3;
+    final lineData = Uint8List(lineWidth * numComps);
 
-    if (comps == srcComps) {
+    if (numComps == srcComps) {
       final srcOffset = _currentLine * lineWidth * srcComps;
       lineData.setRange(0, lineWidth * srcComps, _rgbData!, srcOffset);
-    } else if (comps == 1) {
+    } else if (numComps == 1) {
       // Grayscale output
       final srcOffset = _currentLine * lineWidth * 3;
       for (int x = 0; x < lineWidth; x++) {
@@ -129,7 +119,7 @@ class PngScanlineDecoder extends ScanlineDecoder {
         final b = _rgbData![srcOffset + x * 3 + 2];
         lineData[x] = ((r * 77 + g * 151 + b * 28) >> 8);
       }
-    } else if (comps == 3 && srcComps == 4) {
+    } else if (numComps == 3 && srcComps == 4) {
       // Strip alpha
       final srcOffset = _currentLine * lineWidth * 4;
       for (int x = 0; x < lineWidth; x++) {
@@ -140,28 +130,23 @@ class PngScanlineDecoder extends ScanlineDecoder {
     }
 
     _currentLine++;
+    _srcOffset = _currentLine * lineWidth * numComps;
     return lineData;
   }
 
   @override
-  void rewind() {
+  bool rewind() {
     _currentLine = 0;
-  }
-
-  @override
-  bool skipToScanline(int line) {
-    if (line < 0 || line >= _image.height) {
-      return false;
-    }
-    _currentLine = line;
+    _srcOffset = 0;
     return true;
   }
 
   @override
   Uint8List? getScanline(int line) {
-    if (!skipToScanline(line)) {
+    if (line < 0 || line >= _image.height) {
       return null;
     }
-    return getNextScanline();
+    _currentLine = line;
+    return getNextLine();
   }
 }

@@ -48,7 +48,9 @@ export 'openjpeg_types.dart'
         OpjTccp,
         OpjPoc,
         J2kMarker,
-        Jp2Box;
+        Jp2Box,
+        OpjMessageLevel,
+        OpjMessageCallback;
 
 // Export image structures
 export 'openjpeg_image.dart' show OpjImage, OpjImageComponent;
@@ -82,12 +84,10 @@ export 'tcd.dart'
     show
         TileComponentDecoder,
         TcdComponentInfo,
-        TcdTile,
         TcdTileComponent,
         TcdResolution,
         TcdBand,
-        TcdPrecinct,
-        TcdCodeBlock;
+        TcdPrecinct;
 
 import 'dart:typed_data';
 
@@ -100,9 +100,6 @@ import 'openjpeg_types.dart';
 // ==========================================================
 //   High-Level API
 // ==========================================================
-
-/// Callback for decoder messages
-typedef OpjMessageCallback = void Function(String message);
 
 /// Decodes JPEG 2000 data (auto-detects J2K or JP2 format)
 /// 
